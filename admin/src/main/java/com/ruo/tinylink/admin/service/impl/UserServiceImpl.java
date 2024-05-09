@@ -3,6 +3,8 @@ package com.ruo.tinylink.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruo.tinylink.admin.common.convention.exception.ServiceException;
+import com.ruo.tinylink.admin.common.enums.UserErrorCodeEnum;
 import com.ruo.tinylink.admin.dao.entity.UserDO;
 import com.ruo.tinylink.admin.dao.mapper.UserMapper;
 import com.ruo.tinylink.admin.dto.resp.UserRespDTO;
@@ -19,7 +21,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getUsername, username);
     UserDO userDO = baseMapper.selectOne(queryWrapper);
     if (userDO == null) {
-      throw new IllegalArgumentException("User not found");
+      throw new ServiceException(UserErrorCodeEnum.USER_NULL);
     }
     UserRespDTO result = new UserRespDTO();
     BeanUtils.copyProperties(userDO, result);

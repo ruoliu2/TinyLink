@@ -1,5 +1,7 @@
 package com.ruo.tinylink.admin.controller;
 
+import com.ruo.tinylink.admin.common.convention.result.Result;
+import com.ruo.tinylink.admin.common.convention.result.Results;
 import com.ruo.tinylink.admin.dto.resp.UserRespDTO;
 import com.ruo.tinylink.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,7 @@ public class UserController {
 
   /** Get user by username */
   @GetMapping("/api/tiny-link/v1/user/{username}")
-  public UserRespDTO getUserByUserName(@PathVariable("username") String username) {
-    return userService.getUserByUsername(username);
+  public Result<UserRespDTO> getUserByUserName(@PathVariable("username") String username) {
+    return Results.success(userService.getUserByUsername(username));
   }
 }
