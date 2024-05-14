@@ -7,4 +7,7 @@ import com.ruo.tinylink.admin.dto.resp.UserRespDTO;
 public interface UserService extends IService<UserDO> {
   /** get user info by username */
   UserRespDTO getUserByUsername(String username);
+
+  /** check if username exists */
+  Boolean hasUsername(String username);
 }
