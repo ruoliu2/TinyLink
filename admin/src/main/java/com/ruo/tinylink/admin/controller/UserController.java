@@ -38,7 +38,7 @@ public class UserController {
   }
 
   /** Register user */
-  @PostMapping("/api/short-link/admin/v1/user")
+  @PostMapping("/api/tiny-link/admin/v1/user")
   public Result<Void> register(@RequestBody UserRegisterReqDTO requestParam) {
     userService.register(requestParam);
     return Results.success();
