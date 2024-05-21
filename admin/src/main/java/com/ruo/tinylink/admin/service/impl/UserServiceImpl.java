@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruo.tinylink.admin.common.biz.user.UserContext;
 import com.ruo.tinylink.admin.common.convention.exception.ClientException;
 import com.ruo.tinylink.admin.common.convention.exception.ServiceException;
 import com.ruo.tinylink.admin.common.enums.UserErrorCodeEnum;
@@ -24,6 +25,7 @@ import com.ruo.tinylink.admin.dto.resp.UserLoginRespDTO;
 import com.ruo.tinylink.admin.dto.resp.UserRespDTO;
 import com.ruo.tinylink.admin.service.UserService;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBloomFilter;
@@ -83,7 +85,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
   @Override
   public void update(UserUpdateReqDTO requestParam) {
-    // TODO: check user update is current user
+    if (!Objects.equals(requestParam.getUsername(), UserContext.getUsername())) {
+      throw new ClientException("current login user is not the updating user");
+    }
     LambdaUpdateWrapper<UserDO> updateWrapper =
         Wrappers.lambdaUpdate(UserDO.class).eq(UserDO::getUsername, requestParam.getUsername());
     baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), updateWrapper);
