@@ -1,11 +1,11 @@
-package com.ruo.tinylink.admin.common.web;
+package com.ruo.tinylink.project.common.web;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
-import com.ruo.tinylink.admin.common.convention.errorcode.BaseErrorCode;
-import com.ruo.tinylink.admin.common.convention.exception.AbstractException;
-import com.ruo.tinylink.admin.common.convention.result.Result;
-import com.ruo.tinylink.admin.common.convention.result.Results;
+import com.ruo.tinylink.project.common.convention.errorcode.BaseErrorCode;
+import com.ruo.tinylink.project.common.convention.exception.AbstractException;
+import com.ruo.tinylink.project.common.convention.result.Result;
+import com.ruo.tinylink.project.common.convention.result.Results;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(value = Throwable.class)
   public Result defaultErrorHandler(HttpServletRequest request, Throwable throwable) {
     log.error("[{}] {} ", request.getMethod(), getUrl(request), throwable);
-    // for aggregation mode
+    // for aggregation exception
     // if (Objects.equals(
     //     throwable.getClass().getSuperclass().getSimpleName(),
     //     AbstractException.class.getSimpleName())) {
