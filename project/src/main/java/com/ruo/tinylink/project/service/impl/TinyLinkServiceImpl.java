@@ -1,14 +1,18 @@
 package com.ruo.tinylink.project.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.StrBuilder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruo.tinylink.project.common.convention.exception.ServiceException;
 import com.ruo.tinylink.project.dao.entity.TinyLinkDO;
 import com.ruo.tinylink.project.dao.mapper.TinyLinkMapper;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
+import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
+import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
 import com.ruo.tinylink.project.service.TinyLinkService;
 import com.ruo.tinylink.project.toolkit.HashUtil;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +67,18 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
         .originUrl(requestParam.getOriginUrl())
         .gid(requestParam.getGid())
         .build();
+  }
+
+  @Override
+  public IPage<TinyLinkPageRespDTO> pageTinyLink(TinyLinkPageReqDTO requestParam) {
+    LambdaQueryWrapper<TinyLinkDO> queryWrapper =
+        Wrappers.lambdaQuery(TinyLinkDO.class)
+            .eq(TinyLinkDO::getGid, requestParam.getGid())
+            .eq(TinyLinkDO::getEnableStatus, 0)
+            .eq(TinyLinkDO::getDelFlag, 0)
+            .orderByDesc(TinyLinkDO::getCreateTime);
+    IPage<TinyLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+    return resultPage.convert(each -> BeanUtil.toBean(each, TinyLinkPageRespDTO.class));
   }
 
   private String generateSuffix(TinyLinkCreateReqDTO requestParam) {
