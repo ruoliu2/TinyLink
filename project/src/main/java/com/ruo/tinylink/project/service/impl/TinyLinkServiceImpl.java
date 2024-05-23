@@ -12,6 +12,8 @@ import com.ruo.tinylink.project.common.convention.exception.ClientException;
 import com.ruo.tinylink.project.common.convention.exception.ServiceException;
 import com.ruo.tinylink.project.common.enums.VailDateTypeEnum;
 import com.ruo.tinylink.project.dao.entity.TinyLinkDO;
+import com.ruo.tinylink.project.dao.entity.TinyLinkGotoDO;
+import com.ruo.tinylink.project.dao.mapper.TinyLinkGotoMapper;
 import com.ruo.tinylink.project.dao.mapper.TinyLinkMapper;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
@@ -21,10 +23,14 @@ import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
 import com.ruo.tinylink.project.service.TinyLinkService;
 import com.ruo.tinylink.project.toolkit.HashUtil;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.springframework.dao.DuplicateKeyException;
@@ -37,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
     implements TinyLinkService {
   private final RBloomFilter<String> shortUriCreateCachePenetrationBloomFilter;
+  private final TinyLinkGotoMapper tinyLinkGotoMapper;
 
   public TinyLinkCreateRespDTO createTinyLink(TinyLinkCreateReqDTO requestParam) {
     String tinyLinkSuffix = generateSuffix(requestParam);
@@ -59,8 +66,11 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
             .enableStatus(0)
             .fullShortUrl(fullShortUrl)
             .build();
+    TinyLinkGotoDO tinyLinkGotoDO =
+        TinyLinkGotoDO.builder().gid(requestParam.getGid()).fullShortUrl(fullShortUrl).build();
     try {
       baseMapper.insert(tinyLinkDO);
+      tinyLinkGotoMapper.insert(tinyLinkGotoDO);
     } catch (DuplicateKeyException ex) {
       LambdaQueryWrapper<TinyLinkDO> queryWrapper =
           Wrappers.lambdaQuery(TinyLinkDO.class)
@@ -73,7 +83,7 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
     }
     shortUriCreateCachePenetrationBloomFilter.add(tinyLinkDO.getFullShortUrl());
     return TinyLinkCreateRespDTO.builder()
-        .fullShortUrl(tinyLinkDO.getFullShortUrl())
+        .fullShortUrl("http://" + tinyLinkDO.getFullShortUrl())
         .originUrl(requestParam.getOriginUrl())
         .gid(requestParam.getGid())
         .build();
@@ -88,7 +98,12 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
             .eq(TinyLinkDO::getDelFlag, 0)
             .orderByDesc(TinyLinkDO::getCreateTime);
     IPage<TinyLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
-    return resultPage.convert(each -> BeanUtil.toBean(each, TinyLinkPageRespDTO.class));
+    return resultPage.convert(
+        each -> {
+          TinyLinkPageRespDTO result = BeanUtil.toBean(each, TinyLinkPageRespDTO.class);
+          result.setDomain("http://" + result.getDomain());
+          return result;
+        });
   }
 
   @Override
@@ -102,6 +117,32 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
             .groupBy("gid");
     List<Map<String, Object>> shortLinkDOList = baseMapper.selectMaps(queryWrapper);
     return BeanUtil.copyToList(shortLinkDOList, TinyLinkGroupCountQueryRespDTO.class);
+  }
+
+  @SneakyThrows
+  @Override
+  public void restoreUrl(String shortUri, ServletRequest request, ServletResponse response) {
+    String servername = request.getServerName();
+    String fullShortUrl = servername + "/" + shortUri;
+    LambdaQueryWrapper<TinyLinkGotoDO> linkGotoQueryWrapper =
+        Wrappers.lambdaQuery(TinyLinkGotoDO.class)
+            .eq(TinyLinkGotoDO::getFullShortUrl, fullShortUrl);
+    TinyLinkGotoDO tinyLinkGotoDO = tinyLinkGotoMapper.selectOne(linkGotoQueryWrapper);
+    if (tinyLinkGotoDO == null) {
+      throw new ClientException("tiny-link doesnt exist");
+    }
+
+    LambdaQueryWrapper<TinyLinkDO> queryWrapper =
+        Wrappers.lambdaQuery(TinyLinkDO.class)
+            .eq(TinyLinkDO::getGid, tinyLinkGotoDO.getGid())
+            .eq(TinyLinkDO::getFullShortUrl, fullShortUrl)
+            .eq(TinyLinkDO::getEnableStatus, 0)
+            .eq(TinyLinkDO::getDelFlag, 0);
+    TinyLinkDO tinyLinkDO = baseMapper.selectOne(queryWrapper);
+    if (tinyLinkDO == null) {
+      throw new ClientException("tiny-link doesnt exist");
+    }
+    ((HttpServletResponse) response).sendRedirect(tinyLinkDO.getOriginUrl());
   }
 
   @Transactional(rollbackFor = Exception.class)

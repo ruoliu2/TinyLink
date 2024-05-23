@@ -9,6 +9,9 @@ import com.ruo.tinylink.project.dto.req.TinyLinkUpdateReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+
 import java.util.List;
 
 public interface TinyLinkService extends IService<TinyLinkDO> {
@@ -19,4 +22,6 @@ public interface TinyLinkService extends IService<TinyLinkDO> {
   public void updateTinyLink(TinyLinkUpdateReqDTO requestParam);
 
   List<TinyLinkGroupCountQueryRespDTO> listGroupTinyLinkCount(List<String> requestParam);
+
+  void restoreUrl(String shortUri, ServletRequest request, ServletResponse response);
 }

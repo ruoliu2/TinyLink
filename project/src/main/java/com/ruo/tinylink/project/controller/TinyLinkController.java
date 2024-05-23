@@ -10,6 +10,8 @@ import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
 import com.ruo.tinylink.project.service.TinyLinkService;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -45,5 +47,13 @@ public class TinyLinkController {
   public Result<List<TinyLinkGroupCountQueryRespDTO>> listGroupTinyLinkCount(
       @RequestParam("requestParam") List<String> requestParam) {
     return Results.success(tinyLinkService.listGroupTinyLinkCount(requestParam));
+  }
+
+  @GetMapping("/{short-uri}")
+  public void restoreUrl(
+      @PathVariable("short-uri") String shortUri,
+      ServletRequest request,
+      ServletResponse response) {
+    tinyLinkService.restoreUrl(shortUri, request, response);
   }
 }
