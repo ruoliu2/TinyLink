@@ -10,14 +10,18 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruo.tinylink.admin.common.biz.user.UserContext;
 import com.ruo.tinylink.admin.common.convention.exception.ClientException;
+import com.ruo.tinylink.admin.common.convention.result.Result;
 import com.ruo.tinylink.admin.dao.entity.GroupDO;
 import com.ruo.tinylink.admin.dao.mapper.GroupMapper;
 import com.ruo.tinylink.admin.dto.req.TinyLinkGroupSortReqDTO;
 import com.ruo.tinylink.admin.dto.req.TinyLinkGroupUpdateReqDTO;
 import com.ruo.tinylink.admin.dto.resp.TinyLinkGroupRespDTO;
+import com.ruo.tinylink.admin.remote.dto.TinyLinkActualRemoteService;
+import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.admin.service.GroupService;
 import com.ruo.tinylink.admin.toolkit.RandomGenerator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +36,7 @@ import org.springframework.stereotype.Service;
 public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implements GroupService {
 
   private final RedissonClient redissonClient;
+  TinyLinkActualRemoteService tinyLinkRemoteService = new TinyLinkActualRemoteService() {};
 
   @Value("${tiny-link.group.max-num}")
   private Integer groupMaxNum;
@@ -74,7 +79,20 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
             .eq(GroupDO::getUsername, UserContext.getUsername())
             .orderByDesc(GroupDO::getSortOrder, GroupDO::getUpdateTime);
     List<GroupDO> groupDOList = baseMapper.selectList(queryWrapper);
-    return BeanUtil.copyToList(groupDOList, TinyLinkGroupRespDTO.class);
+    Result<List<TinyLinkGroupCountQueryRespDTO>> listResult =
+        tinyLinkRemoteService.listGroupTinyLinkCount(
+            groupDOList.stream().map(GroupDO::getGid).toList());
+    List<TinyLinkGroupRespDTO> shortLinkGroupRespDTOList =
+        BeanUtil.copyToList(groupDOList, TinyLinkGroupRespDTO.class);
+    shortLinkGroupRespDTOList.forEach(
+        each -> {
+          Optional<TinyLinkGroupCountQueryRespDTO> first =
+              listResult.getData().stream()
+                  .filter(item -> Objects.equals(item.getGid(), each.getGid()))
+                  .findFirst();
+          first.ifPresent(item -> each.setTinyLinkCount(first.get().getTinyLinkCount()));
+        });
+    return shortLinkGroupRespDTOList;
   }
 
   @Override

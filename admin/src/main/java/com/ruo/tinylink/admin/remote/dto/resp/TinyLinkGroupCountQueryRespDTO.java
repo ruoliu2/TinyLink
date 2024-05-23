@@ -6,6 +6,5 @@ import lombok.Data;
 public class TinyLinkGroupCountQueryRespDTO {
 
   private String gid;
-
   private Integer tinyLinkCount;
 }
