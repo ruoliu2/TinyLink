@@ -6,13 +6,12 @@ import com.ruo.tinylink.project.common.convention.result.Results;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
+import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
 import com.ruo.tinylink.project.service.TinyLinkService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,5 +29,11 @@ public class TinyLinkController {
   @GetMapping("/api/tiny-link/v1/page")
   public Result<IPage<TinyLinkPageRespDTO>> pageShortLink(TinyLinkPageReqDTO requestParam) {
     return Results.success(tinyLinkService.pageTinyLink(requestParam));
+  }
+
+  @GetMapping("/api/tiny-link/v1/count")
+  public Result<List<TinyLinkGroupCountQueryRespDTO>> listGroupTinyLinkCount(
+      @RequestParam("requestParam") List<String> requestParam) {
+    return Results.success(tinyLinkService.listGroupTinyLinkCount(requestParam));
   }
 }

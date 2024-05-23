@@ -6,10 +6,14 @@ import com.ruo.tinylink.project.dao.entity.TinyLinkDO;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
+import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
+import java.util.List;
 
 public interface TinyLinkService extends IService<TinyLinkDO> {
   TinyLinkCreateRespDTO createTinyLink(TinyLinkCreateReqDTO requestParam);
 
   IPage<TinyLinkPageRespDTO> pageTinyLink(TinyLinkPageReqDTO requestParam);
+
+  List<TinyLinkGroupCountQueryRespDTO> listGroupTinyLinkCount(List<String> requestParam);
 }

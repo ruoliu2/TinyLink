@@ -3,6 +3,7 @@ package com.ruo.tinylink.project.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.StrBuilder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -12,9 +13,12 @@ import com.ruo.tinylink.project.dao.mapper.TinyLinkMapper;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
+import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
 import com.ruo.tinylink.project.service.TinyLinkService;
 import com.ruo.tinylink.project.toolkit.HashUtil;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
@@ -79,6 +83,19 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
             .orderByDesc(TinyLinkDO::getCreateTime);
     IPage<TinyLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
     return resultPage.convert(each -> BeanUtil.toBean(each, TinyLinkPageRespDTO.class));
+  }
+
+  @Override
+  public List<TinyLinkGroupCountQueryRespDTO> listGroupTinyLinkCount(List<String> requestParam) {
+    QueryWrapper<TinyLinkDO> queryWrapper =
+        Wrappers.query(new TinyLinkDO())
+            .select("gid as gid, count(*) as shortLinkCount")
+            .in("gid", requestParam)
+            .eq("enable_status", 0)
+            .eq("del_flag", 0)
+            .groupBy("gid");
+    List<Map<String, Object>> shortLinkDOList = baseMapper.selectMaps(queryWrapper);
+    return BeanUtil.copyToList(shortLinkDOList, TinyLinkGroupCountQueryRespDTO.class);
   }
 
   private String generateSuffix(TinyLinkCreateReqDTO requestParam) {
