@@ -19,9 +19,11 @@ package com.ruo.tinylink.admin.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruo.tinylink.admin.common.convention.result.Result;
+import com.ruo.tinylink.admin.common.convention.result.Results;
 import com.ruo.tinylink.admin.remote.dto.TinyLinkActualRemoteService;
 import com.ruo.tinylink.admin.remote.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.admin.remote.dto.req.TinyLinkPageReqDTO;
+import com.ruo.tinylink.admin.remote.dto.req.TinyLinkUpdateReqDTO;
 import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkCreateRespDTO;
 import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkPageRespDTO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,5 +47,11 @@ public class TinyLinkController {
   @GetMapping("/api/tiny-link/admin/v1/page")
   public Result<IPage<TinyLinkPageRespDTO>> pageTinyLink(TinyLinkPageReqDTO requestParam) {
     return tinyLinkRemoteService.pageTinyLink(requestParam);
+  }
+
+  @PostMapping("/api/tiny-link/admin/v1/update")
+  public Result<Void> updateShortLink(@RequestBody TinyLinkUpdateReqDTO requestParam) {
+    tinyLinkRemoteService.updateTinyLink(requestParam);
+    return Results.success();
   }
 }

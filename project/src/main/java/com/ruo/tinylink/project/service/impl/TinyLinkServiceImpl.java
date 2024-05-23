@@ -4,14 +4,18 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.text.StrBuilder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruo.tinylink.project.common.convention.exception.ClientException;
 import com.ruo.tinylink.project.common.convention.exception.ServiceException;
+import com.ruo.tinylink.project.common.enums.VailDateTypeEnum;
 import com.ruo.tinylink.project.dao.entity.TinyLinkDO;
 import com.ruo.tinylink.project.dao.mapper.TinyLinkMapper;
 import com.ruo.tinylink.project.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.project.dto.req.TinyLinkPageReqDTO;
+import com.ruo.tinylink.project.dto.req.TinyLinkUpdateReqDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkCreateRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.project.dto.resp.TinyLinkPageRespDTO;
@@ -19,11 +23,13 @@ import com.ruo.tinylink.project.service.TinyLinkService;
 import com.ruo.tinylink.project.toolkit.HashUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -96,6 +102,57 @@ public class TinyLinkServiceImpl extends ServiceImpl<TinyLinkMapper, TinyLinkDO>
             .groupBy("gid");
     List<Map<String, Object>> shortLinkDOList = baseMapper.selectMaps(queryWrapper);
     return BeanUtil.copyToList(shortLinkDOList, TinyLinkGroupCountQueryRespDTO.class);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  @Override
+  public void updateTinyLink(TinyLinkUpdateReqDTO requestParam) {
+    LambdaQueryWrapper<TinyLinkDO> queryWrapper =
+        Wrappers.lambdaQuery(TinyLinkDO.class)
+            .eq(TinyLinkDO::getGid, requestParam.getGid())
+            .eq(TinyLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+            .eq(TinyLinkDO::getDelFlag, 0)
+            .eq(TinyLinkDO::getEnableStatus, 0);
+    TinyLinkDO hasTinyLinkDO = baseMapper.selectOne(queryWrapper);
+    if (hasTinyLinkDO == null) {
+      throw new ClientException("tiny-link doesnt exist");
+    }
+    TinyLinkDO tinyLinkDO =
+        TinyLinkDO.builder()
+            .domain(hasTinyLinkDO.getDomain())
+            .shortUri(hasTinyLinkDO.getShortUri())
+            .clickNum(hasTinyLinkDO.getClickNum())
+            .favicon(hasTinyLinkDO.getFavicon())
+            .createdType(hasTinyLinkDO.getCreatedType())
+            .gid(requestParam.getGid())
+            .originUrl(requestParam.getOriginUrl())
+            .describe(requestParam.getDescribe())
+            .validDateType(requestParam.getValidDateType())
+            .validDate(requestParam.getValidDate())
+            .build();
+    if (Objects.equals(hasTinyLinkDO.getGid(), requestParam.getGid())) {
+      LambdaUpdateWrapper<TinyLinkDO> updateWrapper =
+          Wrappers.lambdaUpdate(TinyLinkDO.class)
+              .eq(TinyLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+              .eq(TinyLinkDO::getGid, requestParam.getGid())
+              .eq(TinyLinkDO::getDelFlag, 0)
+              .eq(TinyLinkDO::getEnableStatus, 0)
+              .set(
+                  Objects.equals(
+                      requestParam.getValidDateType(), VailDateTypeEnum.PERMANENT.getType()),
+                  TinyLinkDO::getValidDate,
+                  null);
+      baseMapper.update(tinyLinkDO, updateWrapper);
+    } else {
+      LambdaUpdateWrapper<TinyLinkDO> updateWrapper =
+          Wrappers.lambdaUpdate(TinyLinkDO.class)
+              .eq(TinyLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+              .eq(TinyLinkDO::getGid, hasTinyLinkDO.getGid())
+              .eq(TinyLinkDO::getDelFlag, 0)
+              .eq(TinyLinkDO::getEnableStatus, 0);
+      baseMapper.delete(updateWrapper);
+      baseMapper.insert(tinyLinkDO);
+    }
   }
 
   private String generateSuffix(TinyLinkCreateReqDTO requestParam) {

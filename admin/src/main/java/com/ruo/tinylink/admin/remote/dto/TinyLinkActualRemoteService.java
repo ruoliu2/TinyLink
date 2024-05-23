@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruo.tinylink.admin.common.convention.result.Result;
 import com.ruo.tinylink.admin.remote.dto.req.TinyLinkCreateReqDTO;
 import com.ruo.tinylink.admin.remote.dto.req.TinyLinkPageReqDTO;
+import com.ruo.tinylink.admin.remote.dto.req.TinyLinkUpdateReqDTO;
 import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkCreateRespDTO;
 import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkGroupCountQueryRespDTO;
 import com.ruo.tinylink.admin.remote.dto.resp.TinyLinkPageRespDTO;
@@ -38,5 +39,9 @@ public interface TinyLinkActualRemoteService {
     requestMap.put("requestParam", requestParam);
     String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/tiny-link/v1/count", requestMap);
     return JSON.parseObject(resultPageStr, new TypeReference<>() {});
+  }
+
+  default void updateTinyLink(TinyLinkUpdateReqDTO requestParam) {
+    HttpUtil.post("http://127.0.0.1:8001/api/tiny-link/v1/update", JSON.toJSONString(requestParam));
   }
 }
